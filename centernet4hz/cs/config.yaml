@@ -1,0 +1,88 @@
+base_lr: 0.1
+batch_size: 64
+comment: ''
+config: ./config/NTURGBD/centernet4hz_nturgbd_xsub_train.yaml
+data_path: /home/jaagaard/magnus_od/action_recognition/datasets/NTURGBD/skeleton
+dataset: NTU
+device:
+- 0
+eval_interval: 1
+ignore_weights: []
+loader: NTULoader
+log_interval: 100
+missing_txt: /home/magnus/pb-gcn/samples_with_missing_skeletons.txt
+model: ST_GCONV_RESNET
+model_args:
+  channel: 15
+  graph: CenterNetGraph
+  graph_args:
+    labeling_mode: parts
+  layers_config:
+  - - 64
+    - 64
+    - 1
+  - - 64
+    - 64
+    - 1
+  - - 64
+    - 64
+    - 1
+  - - 64
+    - 128
+    - 2
+  - - 128
+    - 128
+    - 1
+  - - 128
+    - 128
+    - 1
+  - - 128
+    - 256
+    - 2
+  - - 256
+    - 256
+    - 1
+  - - 256
+    - 256
+    - 1
+  mask_learning: true
+  num_actors: 2
+  num_class: 60
+  num_joints: 17
+  use_data_bn: true
+  window_size: 25
+nesterov: true
+num_epoch: 100
+num_workers: 32
+optimizer: SGD
+phase: train
+print_log: true
+save_interval: 1
+save_score: false
+seed: 1
+show_topk:
+- 1
+- 5
+start_epoch: 0
+step:
+- 20
+- 50
+- 70
+test_batch_size: 64
+test_loader_args:
+  is_test: false
+  is_training: false
+  signals:
+    all_signal: false
+    spatial_signal: true
+    temporal_signal: true
+  split_dir: /home/magnus/pb-gcn/datasets/cs
+train_loader_args:
+  signals:
+    all_signal: false
+    spatial_signal: true
+    temporal_signal: true
+  split_dir: /home/magnus/pb-gcn/datasets/cs
+weight_decay: 0.0005
+weights: null
+work_dir: /home/magnus/pb-gcn/centernet4hz/cs

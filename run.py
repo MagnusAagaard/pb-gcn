@@ -20,6 +20,8 @@ from utils.hdm05 import gendata as hdm_gendata
 import data
 import models
 
+from data import signals
+
 class AverageMeter(object):
     """Computes and stores the average and current value"""
     def __init__(self):
@@ -82,6 +84,7 @@ class Runner(object):
         Model = getattr(models, self.args.model)
         self.model = Model(**self.args.model_args).cuda(output_device)
         self.loss = nn.CrossEntropyLoss().cuda(output_device)
+        print("Nb params: {}".format(sum(p.numel() for p in self.model.parameters() if p.requires_grad)))
 
         if self.args.weights:
             self.print_log('Load weights from {}.'.format(self.args.weights))
@@ -265,7 +268,42 @@ class Runner(object):
                 with open('{}/epoch{}_{}_score.pkl'.format(
                         self.args.work_dir, epoch + 1, 'test'), 'w') as f:
                     pickle.dump(score_dict, f)
-
+    
+    def summary(self):
+        torch.save(self.model, os.path.join(self.args.work_dir, 'model.pt'))
+        self.model.eval()
+        #x = Variable(torch.randn(3, 20, 25, 2).float().cuda(), requires_grad=False)
+        x = np.random.rand(3,20,25,2)
+        start = torch.cuda.Event(enable_timing=True)
+        end = torch.cuda.Event(enable_timing=True)
+        sample = 0
+        with torch.no_grad():
+            for i in range(50):
+                disps = getattr(signals, 'displacementVectors')(sample=x)
+                rel_coords = getattr(signals, 'relativeCoordinates')(sample=x)
+                xx = np.concatenate([disps, rel_coords], axis=0)
+                xx = np.expand_dims(xx, axis=0)
+                sample = torch.from_numpy(xx).float().to(self.output_device)
+                sample = Variable(sample.float().cuda(self.output_device), requires_grad=False)
+                output = self.model(sample)
+            start.record()
+            for i in range(200):
+                disps = getattr(signals, 'displacementVectors')(sample=x)
+                rel_coords = getattr(signals, 'relativeCoordinates')(sample=x)
+                xx = np.concatenate([disps, rel_coords], axis=0)
+                xx = np.expand_dims(xx, axis=0)
+                sample = torch.from_numpy(xx).float().to(self.output_device)
+                sample = Variable(sample.float().cuda(self.output_device), requires_grad=False)
+                output = self.model(sample)
+            end.record()
+            
+        # Waits for everything to finish running
+        torch.cuda.synchronize()
+        
+        self.print_log('Time for a forward pass: {}'.format(start.elapsed_time(end) / 200.))
+        summary(self.model,sample.shape[1:])
+        
+    
     def run(self):
         self.logdir = os.path.join(self.args.work_dir, 'runs')
         if not self.args.comment == '':
@@ -274,6 +312,7 @@ class Runner(object):
             self.summary_writer = SummaryWriter(logdir=self.logdir)
         if self.args.phase == 'train':
             self.print_log('Parameters:\n{}\n'.format(str(vars(self.args))))
+            
             for epoch in range(self.args.start_epoch, self.args.num_epoch):
                 save_model = ((epoch + 1) % self.args.save_interval == 0) or (
                     epoch + 1 == self.args.num_epoch)
@@ -297,6 +336,16 @@ class Runner(object):
             self.print_log('Weights: {}.'.format(self.args.weights))
             self.eval(
                 epoch=0, save_score=self.args.save_score)
+            self.print_log('Done.\n')
+        
+        elif self.args.phase == 'summary':
+            if self.args.weights is None:
+                raise ValueError('Please appoint --weights.')
+            self.args.print_log = True
+            self.print_log('---------Summary---------\n')
+            self.print_log('Model:   {}.'.format(self.args.model))
+            self.print_log('Weights: {}.'.format(self.args.weights))
+            self.summary()
             self.print_log('Done.\n')
 
 if __name__ == '__main__':
@@ -368,12 +417,12 @@ if __name__ == '__main__':
         # Prepare testing data if it is not already present
         test_data_check = glob.glob(os.path.join(
             args.test_loader_args['split_dir'],
-            'val_*')
+            'test_*')
         )
         print(test_data_check)
         if not (len(test_data_check) == 2):
             topdir, benchmark = os.path.split(args.test_loader_args['split_dir'])
-            part = 'val'
+            part = 'test'
             if not os.path.exists(args.test_loader_args['split_dir']):
                 os.makedirs(args.test_loader_args['split_dir'])
             ntu_gendata(
@@ -387,7 +436,7 @@ if __name__ == '__main__':
         # Launch the training process
         launcher = Runner(args)
         launcher.run()
-        best_valid_loss = sorted(self.best_valid, key=lambda x: x[0])
-        best_valid_acc = sorted(self.best_valid, key=lambda x: -x[1])
+        best_valid_loss = sorted(launcher.best_valid, key=lambda x: x[0])
+        best_valid_acc = sorted(launcher.best_valid, key=lambda x: -x[1])
         print("Lowest loss value (accuracy): {} ({})".format(best_valid_loss[0][0], best_valid_loss[0][1]))
         print("Highest accuracy value (loss): {} ({})".format(best_valid_acc[0][1], best_valid_acc[0][0]))

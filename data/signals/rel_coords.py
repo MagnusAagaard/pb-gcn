@@ -1,7 +1,7 @@
 import numpy as np
 
 def get_relative_coordinates(sample,
-                             references=(4, 8, 12, 16)):
+                             references=(5, 6, 11, 12)):
     # input: C, T, V, M
     C, T, V, M = sample.shape
     final_sample = np.zeros((4*C, T, V, M))
@@ -23,4 +23,5 @@ def get_relative_coordinates(sample,
     rel_coords = np.vstack(rel_coords)
     # Shape: C, T, V, M
     final_sample[:, start:end, :, :] = rel_coords
+    #print("Rel coords!")
     return final_sample

@@ -14,12 +14,14 @@ def get_relative_coordinate_angles(sample,
     C, t, V, M = sample.shape
 
     rel_coords = []
+    #V, C, t, M - C, t, V, M
     for i in range(len(references)):
         ref_loc = sample[:, :, references[i], :]
         coords_diff = (sample.transpose((2, 0, 1, 3)) - ref_loc).transpose((1, 2, 0, 3))
         rel_coords.append(coords_diff)
 
     rel_angles = []
+    #1 værdi for hver af de fire ref joints, så 4*C
     for coords in rel_coords:
         flattenx = coords[0, :, :, :].reshape((t * V * M))
         flatteny = coords[1, :, :, :].reshape((t * V * M))
@@ -38,4 +40,5 @@ def get_relative_coordinate_angles(sample,
 
     # Shape: C, T, V, M
     final_sample[:, start:end, :, :] = rel_angles
+    #print("Rel angles!")
     return final_sample

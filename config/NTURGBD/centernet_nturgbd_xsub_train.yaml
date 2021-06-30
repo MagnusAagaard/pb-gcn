@@ -1,0 +1,55 @@
+work_dir: /home/jaagaard/magnus_od/action_recognition/pb-gcn/centernet/cs
+data_path: /home/jaagaard/magnus_od/action_recognition/datasets/NTURGBD/skeleton
+missing_txt: /home/jaagaard/magnus_od/action_recognition/pb-gcn/samples_with_missing_skeletons.txt
+
+# Data Loader
+loader: NTULoader
+train_loader_args:
+  split_dir: /home/jaagaard/magnus_od/action_recognition/pb-gcn/datasets/cs
+  signals:
+    temporal_signal: True
+    spatial_signal: True
+    all_signal: False
+test_loader_args:
+  split_dir: /home/jaagaard/magnus_od/action_recognition/pb-gcn/datasets/cs
+  is_training: False
+  signals:
+    temporal_signal: True
+    spatial_signal: True
+    all_signal: False
+
+# Model
+model: ST_GCONV_RESNET
+model_args:
+  layers_config: [[64, 64, 1], [64, 64, 1], [64, 64, 1], [64, 128, 2], [128, 128, 1],
+      [128, 128, 1], [128, 256, 2], [256, 256, 1], [256, 256, 1]]
+  num_class: 60
+  channel: 15
+  window_size: 100
+  num_joints: 13
+  num_actors: 2
+  graph: CenterNetGraph
+  graph_args:
+    labeling_mode: 'parts'
+  mask_learning: True
+  use_data_bn: True
+
+# Optimization
+weight_decay: 0.0005
+base_lr: 0.1
+step: [20, 50, 70]
+
+# Training
+device: [0]
+batch_size: 64
+test_batch_size: 64
+num_epoch: 100
+nesterov: True
+save_interval: 5
+
+# Evaluation
+eval_interval: 5
+
+# Initialization from checkpoint
+#start_epoch: 80
+#weights: ./20t/cs/epoch80_model.pt

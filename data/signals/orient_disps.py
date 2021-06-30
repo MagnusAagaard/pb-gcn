@@ -37,5 +37,7 @@ def get_oriented_displacements(sample):
     orient_disps = np.stack([xy, yz, xz])
     # Shape C, T, V, M
     final_sample[:, start:end-1, :, :] = orient_disps
+    
+    #print("orient displacements!")
 
     return final_sample

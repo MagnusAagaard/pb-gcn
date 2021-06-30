@@ -30,6 +30,7 @@ class NTULoader(Dataset):
                  transforms=None,
                  transform_args=dict(),
                  is_training=True,
+                 is_test=False,
                  signals=dict(),
                  window_size=-1):
         self.transforms = transforms
@@ -37,6 +38,7 @@ class NTULoader(Dataset):
         self.is_training = is_training
         self.num_frames = window_size
         self.transform_args = transform_args
+        self.is_test = is_test
 
         self.temporal_signal = False
         self.spatial_signal = False
@@ -48,12 +50,16 @@ class NTULoader(Dataset):
         if 'all_signal' in signals.keys():
             self.all_signal = signals['all_signal']
 
-        if is_training:
+        if is_test:
+            self.data_path = os.path.join(split_dir, 'test_data.npy')
+            self.label_path = os.path.join(split_dir, 'test_label.pkl')
+        elif is_training:
             self.data_path = os.path.join(split_dir, 'train_data.npy')
             self.label_path = os.path.join(split_dir, 'train_label.pkl')
         else:
             self.data_path = os.path.join(split_dir, 'val_data.npy')
             self.label_path = os.path.join(split_dir, 'val_label.pkl')
+            print("Using VAL!")
 
         """ Load the labels from the pickle file
             Each record -> (sample_name, label)
@@ -75,7 +81,41 @@ class NTULoader(Dataset):
             M : Number of actors
         """
         try:
-            self.samples = np.load(self.data_path)
+            self.temp_samples = np.load(self.data_path)
+            N, C, T, V, M = self.temp_samples.shape
+            #Use 100 frames and take every 2nd frame. 13 joints for CenterNet
+            #Joint numbers - 1
+            #joints = (3, 4, 8, 5, 9, 6, 10, 12, 16, 13, 17, 14, 18)
+            #self.temp_samples = self.temp_samples[:,:,:,(joints),:]
+            #print(self.temp_samples.shape)
+            self.final_samples = np.zeros((N,C,25,17,M))
+            #for i in range(self.temp_samples.shape[0]):
+            #    k = 0
+            #    numF = 0
+            #    while numF < 100:
+            #        if k % 2 == 0:
+            #            self.final_samples[i,:,numF,:,:] = self.temp_samples[i,:,k,:,:]
+            #            numF += 1
+            #        if k >= self.temp_samples.shape[2]:
+            #            k = 0
+            #        if not self.temp_samples[i,0,k,0,0] == 0.0:
+            #            k += 1
+            #        else:
+            #            k = 0
+
+            for i in range(self.temp_samples.shape[0]):
+                k = 0
+                numF = 0
+                while numF < 25:
+                    if k % 7 == 0:
+                        if k < self.temp_samples.shape[2]:
+                            self.final_samples[i,:,numF,:,:] = self.temp_samples[i,:,k,:,:]
+                            numF += 1
+                        else:
+                            numF = 25
+                    k += 1
+
+            self.samples = self.final_samples
         except Exception as e:
             print("Error in loading the .npy file: ", e)
 
@@ -112,6 +152,9 @@ class NTULoader(Dataset):
             disps = getattr(signals, 'displacementVectors')(sample=sample)
             rel_coords = getattr(signals, 'relativeCoordinates')(sample=sample)
             sample = np.concatenate([disps, rel_coords], axis=0)
+            #print("Disps: {}".format(disps.shape))
+            #print("Rel_coods: {}".format(rel_coords.shape))
+            #print("Sample: {}".format(sample.shape))
         elif self.temporal_signal:
             disps = getattr(signals, 'displacementVectors')(sample=sample)
             sample = disps

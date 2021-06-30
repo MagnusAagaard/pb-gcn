@@ -1,17 +1,17 @@
-work_dir: /media/data_cifs/Kalpit/NTURGB+D/work_dir/cs/STGCN_parts_noaug
-data_path: /media/ssd_storage/NTURGB+D/nturgb+d_skeletons
-missing_txt: /media/ssd_storage/NTURGB+D/samples_with_missing_skeletons.txt
+work_dir: /home/jaagaard/magnus_od/action_recognition/pb-gcn/20t_batch64/cs
+data_path: /home/jaagaard/magnus_od/action_recognition/datasets/NTURGBD/skeleton
+missing_txt: /home/jaagaard/magnus_od/action_recognition/pb-gcn/samples_with_missing_skeletons.txt
 
 # Data Loader
 loader: NTULoader
 train_loader_args:
-  split_dir: /media/data_cifs/Kalpit/NTURGB+D/data/NTURGB+D/cs
+  split_dir: /home/jaagaard/magnus_od/action_recognition/pb-gcn/datasets/cs
   signals:
     temporal_signal: True
     spatial_signal: True
     all_signal: False
 test_loader_args:
-  split_dir: /media/data_cifs/Kalpit/NTURGB+D/data/NTURGB+D/cs
+  split_dir: /home/jaagaard/magnus_od/action_recognition/pb-gcn/datasets/cs
   is_training: False
   signals:
     temporal_signal: True
@@ -25,7 +25,7 @@ model_args:
       [128, 128, 1], [128, 256, 2], [256, 256, 1], [256, 256, 1]]
   num_class: 60
   channel: 15
-  window_size: 300
+  window_size: 20
   num_joints: 25
   num_actors: 2
   graph: NTUGraph
@@ -40,10 +40,10 @@ base_lr: 0.1
 step: [20, 50, 70]
 
 # Training
-device: [0,1,2,3]
+device: [0]
 batch_size: 64
 test_batch_size: 64
-num_epoch: 80
+num_epoch: 100
 nesterov: True
 save_interval: 5
 
@@ -51,5 +51,5 @@ save_interval: 5
 eval_interval: 5
 
 # Initialization from checkpoint
-# start_epoch: 5
-# weights: /media/data_cifs/Kalpit/NTURGB+D/work_dir/cs/STGCN_parts_noaug/epoch65_model.pt
+#start_epoch: 80
+#weights: ./20t/cs/epoch80_model.pt
